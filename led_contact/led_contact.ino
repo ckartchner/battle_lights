@@ -120,6 +120,13 @@ int normalize_pos(int curr_pos) {
   return curr_pos;
 }
 
+void show_battle_pos(int right_team_new_pos, int left_team_new_pos){
+  right_team_pos = normalize_pos(right_team_new_pos);
+  left_team_pos = normalize_pos(left_team_new_pos);
+  strip.setPixelColor(right_team_pos, purple);
+  strip.setPixelColor(left_team_pos, yellow);
+  strip.show();
+}
 
 void pixel_battle() {
   strip.clear();
@@ -134,14 +141,15 @@ void pixel_battle() {
   int left_team_start_pos = left_team_pos;
   int right_team_new_pos = new_pos(right_team_pos);
   int left_team_new_pos = new_pos(left_team_pos);
+  show_battle_pos(right_team_new_pos, left_team_new_pos);
   float col_time = collision_time(right_team_start_pos, right_team_new_pos, left_team_start_pos, left_team_new_pos);
   if (is_collision(col_time) == true) {
     float cp = collision_position(right_team_start_pos, right_team_new_pos, col_time);
     // Check which team scored the point and increment 
     if (cp < middle) {
-      left_count++;
-    } else if (cp > middle) {
       right_count++;
+    } else if (cp > middle) {
+      left_count++;
     } else {
       // Tie
     }
@@ -164,22 +172,20 @@ void pixel_battle() {
 
     // End of round LED sequence
     if (cp < middle) {
-      left_wins();
+      right_wins();
     } else if (cp > middle) {
-      right_wins();  
+      left_wins();  
     } else {
       // Tie
     }
     white_flash();
     // rainbow(2);
-    right_team_new_pos = right_team_init_pos;
-    left_team_new_pos = left_team_init_pos;
+
+    // Reset pixels to starting location
+    // right_team_pos = right_team_init_pos;
+    // left_team_pos = left_team_init_pos;
+    show_battle_pos(right_team_init_pos, left_team_init_pos);
   }
-  right_team_pos = normalize_pos(right_team_new_pos);
-  left_team_pos = normalize_pos(left_team_new_pos);
-  strip.setPixelColor(right_team_pos, purple);
-  strip.setPixelColor(left_team_pos, yellow);
-  strip.show();
   delay(100);
 }
 

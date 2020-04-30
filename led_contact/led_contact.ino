@@ -46,15 +46,17 @@ int full_count = 0;
 
 int middle = strip.numPixels()/2;
 int quarter = middle / 2;
-int blue_team_init_pos = strip.numPixels() - quarter;
-int red_team_init_pos = quarter;
-int blue_team_pos = blue_team_init_pos;
-int red_team_pos = red_team_init_pos;
+int right_team_init_pos = strip.numPixels() - quarter;
+int left_team_init_pos = quarter;
+int right_team_pos = right_team_init_pos;
+int left_team_pos = left_team_init_pos;
 uint32_t red = strip.Color(127, 0, 0);
 uint32_t blue = strip.Color(0, 0, 127);
 uint32_t yellow = strip.Color(127, 127, 0);
 uint32_t green = strip.Color(0, 127, 0);
 uint32_t purple = strip.Color(127, 0, 127);
+uint32_t left_color = red;
+uint32_t right_color = blue;
 
 
 void setup() {
@@ -69,6 +71,8 @@ void setup() {
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
   strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
+  white_flash();
+  strip.show();
   
   // 7 segment setup
   matrix.begin(0x70);
@@ -119,25 +123,25 @@ int normalize_pos(int curr_pos) {
 
 void pixel_battle() {
   strip.clear();
-  // Setup red vs. blue
+  // Setup left vs. right colors
   for(int i=0; i<middle; i++) {
-    strip.setPixelColor(i, red);
+    strip.setPixelColor(i, left_color);
   }
   for(int i=middle; i<=strip.numPixels(); i++) {
-    strip.setPixelColor(i, blue);
+    strip.setPixelColor(i, right_color);
   }
-  int blue_team_start_pos = blue_team_pos;
-  int red_team_start_pos = red_team_pos;
-  int blue_team_new_pos = new_pos(blue_team_pos);
-  int red_team_new_pos = new_pos(red_team_pos);
-  float col_time = collision_time(blue_team_start_pos, blue_team_new_pos, red_team_start_pos, red_team_new_pos);
+  int right_team_start_pos = right_team_pos;
+  int left_team_start_pos = left_team_pos;
+  int right_team_new_pos = new_pos(right_team_pos);
+  int left_team_new_pos = new_pos(left_team_pos);
+  float col_time = collision_time(right_team_start_pos, right_team_new_pos, left_team_start_pos, left_team_new_pos);
   if (is_collision(col_time) == true) {
-    float cp = collision_position(blue_team_start_pos, blue_team_new_pos, col_time);
-    // Check which team scored the point
+    float cp = collision_position(right_team_start_pos, right_team_new_pos, col_time);
+    // Check which team scored the point and increment 
     if (cp < middle) {
       left_count++;
     } else if (cp > middle) {
-      right_count++;  
+      right_count++;
     } else {
       // Tie
     }
@@ -157,16 +161,24 @@ void pixel_battle() {
       matrix.drawColon(false);
     }
     matrix.writeDisplay();
-    // increment the score
-    // do cool flashy light stuff here to indicate end/start of round
-    rainbow(2);
-    blue_team_new_pos = blue_team_init_pos;
-    red_team_new_pos = red_team_init_pos;
+
+    // End of round LED sequence
+    if (cp < middle) {
+      left_wins();
+    } else if (cp > middle) {
+      right_wins();  
+    } else {
+      // Tie
+    }
+    white_flash();
+    // rainbow(2);
+    right_team_new_pos = right_team_init_pos;
+    left_team_new_pos = left_team_init_pos;
   }
-  blue_team_pos = normalize_pos(blue_team_new_pos);
-  red_team_pos = normalize_pos(red_team_new_pos);
-  strip.setPixelColor(blue_team_pos, purple);
-  strip.setPixelColor(red_team_pos, yellow);
+  right_team_pos = normalize_pos(right_team_new_pos);
+  left_team_pos = normalize_pos(left_team_new_pos);
+  strip.setPixelColor(right_team_pos, purple);
+  strip.setPixelColor(left_team_pos, yellow);
   strip.show();
   delay(100);
 }
@@ -200,8 +212,33 @@ float collision_position(int pos1, int pos2, float time) {
 }
 
 
-// Some functions of our own for creating animated effects -----------------
+// Some functions for creating animated effects -----------------
+void right_wins() {
+  for (int i=middle; i>=0; i--) {
+    strip.setPixelColor(i, right_color);
+    strip.show();
+    delay(200);
+  }
+}
 
+void left_wins() {
+  for (int i=middle; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, left_color);
+    strip.show();
+    delay(200);
+  }
+}
+
+void white_flash() {
+  for (int i=0; i<3; i++) {
+    strip.fill(strip.Color(127, 127, 127));  // White half brightness
+    strip.show();
+    delay(200);
+    strip.clear();
+    strip.show();
+    delay(100);
+  }
+}
 // Fill strip pixels one after another with a color. Strip is NOT cleared
 // first; anything there will be covered pixel by pixel. Pass in color
 // (as a single 'packed' 32-bit value, which you can get by calling

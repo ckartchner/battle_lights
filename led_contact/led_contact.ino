@@ -1,4 +1,4 @@
-// A basic everyday NeoPixel strip test program.
+// Bootstrapped with NeoPixel strip test program.
 
 // NEOPIXEL BEST PRACTICES for most reliable operation:
 // - Add 1000 uF CAPACITOR between NeoPixel strip's + and - connections.
@@ -10,6 +10,9 @@
 //   a LOGIC-LEVEL CONVERTER on the data line is STRONGLY RECOMMENDED.
 // (Skipping these may work OK on your workbench but can fail in the field)
 
+#include <Wire.h> // Enable this line if using Arduino Uno, Mega, etc.
+#include <Adafruit_GFX.h>
+#include "Adafruit_LEDBackpack.h"
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
  #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
@@ -33,8 +36,26 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
+// number of pixesl the led can randomly move
+int rand_range = 3;
 
-// setup() function -- runs once at startup --------------------------------
+Adafruit_7segment matrix = Adafruit_7segment();
+int left_count = 0;
+int right_count = 0;
+int full_count = 0;
+
+int middle = strip.numPixels()/2;
+int quarter = middle / 2;
+int blue_team_init_pos = strip.numPixels() - quarter;
+int red_team_init_pos = quarter;
+int blue_team_pos = blue_team_init_pos;
+int red_team_pos = red_team_init_pos;
+uint32_t red = strip.Color(127, 0, 0);
+uint32_t blue = strip.Color(0, 0, 127);
+uint32_t yellow = strip.Color(127, 127, 0);
+uint32_t green = strip.Color(0, 127, 0);
+uint32_t purple = strip.Color(127, 0, 127);
+
 
 void setup() {
   // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
@@ -44,14 +65,25 @@ void setup() {
 #endif
   // END of Trinket-specific code.
 
+  // LED setup
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
   strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
+  
+  // 7 segment setup
+  matrix.begin(0x70);
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  matrix.writeDigitNum(0, 0);
+  matrix.writeDigitNum(1, 0);
+  matrix.writeDigitNum(2, 0);
+  matrix.writeDigitNum(3, 0);
+  matrix.drawColon(false);
+  matrix.writeDisplay();
+
   Serial.begin(9600);
 }
 
-
-// loop() function -- runs repeatedly as long as board is on ---------------
 
 void loop() {
   // // Fill along the length of the strip in various colors...
@@ -64,12 +96,12 @@ void loop() {
   // theaterChase(strip.Color(127,   0,   0), 50); // Red, half brightness
   // theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
 
-  //  rainbow(10);             // Flowing rainbow cycle along the whole strip
-//  theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
-  rvb();
+  // rainbow(10);             // Flowing rainbow cycle along the whole strip
+  // theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
+  pixel_battle();
 }
 
-int rand_range = 3;
+
 int new_pos(int curr_pos) {
   curr_pos = curr_pos + random(-rand_range, rand_range);
   return curr_pos;
@@ -84,20 +116,10 @@ int normalize_pos(int curr_pos) {
   return curr_pos;
 }
 
-int middle = strip.numPixels()/2;
-int quarter = middle / 2;
-int blue_team_init_pos = strip.numPixels() - quarter;
-int red_team_init_pos = quarter;
-int blue_team_pos = blue_team_init_pos;
-int red_team_pos = red_team_init_pos;
-uint32_t red = strip.Color(127, 0, 0);
-uint32_t blue = strip.Color(0, 0, 127);
-uint32_t yellow = strip.Color(127, 127, 0);
-uint32_t green = strip.Color(0, 127, 0);
-uint32_t purple = strip.Color(127, 0, 127);
 
-void rvb() {
+void pixel_battle() {
   strip.clear();
+  // Setup red vs. blue
   for(int i=0; i<middle; i++) {
     strip.setPixelColor(i, red);
   }
@@ -109,24 +131,34 @@ void rvb() {
   int blue_team_new_pos = new_pos(blue_team_pos);
   int red_team_new_pos = new_pos(red_team_pos);
   float col_time = collision_time(blue_team_start_pos, blue_team_new_pos, red_team_start_pos, red_team_new_pos);
-  Serial.print("collision time:");
-  Serial.println(col_time);
   if (is_collision(col_time) == true) {
     float cp = collision_position(blue_team_start_pos, blue_team_new_pos, col_time);
-    // check which team scored the point
+    // Check which team scored the point
+    if (cp < middle) {
+      left_count++;
+    } else if (cp > middle) {
+      right_count++;  
+    } else {
+      // Tie
+    }
+    full_count = left_count * 100 + right_count;
+    Serial.println(full_count);
+    matrix.print(full_count, DEC);
+    // Ensure there is always a zero in the left most digit
+    if (full_count < 1000) {
+        matrix.writeDigitNum(0, 0);
+    }
+    // Initialize display to all zeros
+    if (left_count < 1){
+      matrix.writeDigitNum(0, 0);
+      matrix.writeDigitNum(1, 0);
+      matrix.writeDigitNum(2, 0);
+      matrix.writeDigitNum(3, 0);
+      matrix.drawColon(false);
+    }
+    matrix.writeDisplay();
     // increment the score
     // do cool flashy light stuff here to indicate end/start of round
-    Serial.print("Blue start:");
-    Serial.println(blue_team_start_pos);
-    Serial.print("Blue stop:");
-    Serial.println(blue_team_new_pos);
-    Serial.print("Red start:");
-    Serial.println(red_team_start_pos);
-    Serial.print("Red stop:");
-    Serial.println(red_team_new_pos);
-    Serial.print("Collision position:");
-    Serial.println(cp);
-    Serial.println("Show a pretty rainbow");
     rainbow(2);
     blue_team_new_pos = blue_team_init_pos;
     red_team_new_pos = red_team_init_pos;
@@ -139,37 +171,27 @@ void rvb() {
   delay(100);
 }
 
-// boolean sign_changed(int num1, int num2){
-//   boolean output = false;
-//   if (num1 > 0 && num2 < 0) {
-//     output = true;
-//   } else if (num1 < 0 && num2 > 0) {
-//     output = true;
-//   }
-//   return output;
-// }
-
 float collision_time(int pos_a1, int pos_a2, int pos_b1, int pos_b2) {
-  // Derived from 
-  Serial.print(pos_a1);
-  Serial.print(pos_a2);
-  Serial.print(pos_b1);
-  Serial.print(pos_b2);
+  // At each step, the "velocity" of each point changes
+  // The velocity is constant during that step
+  // time = 
+  // (how far apart the points were when they started) /
+  // (difference in velocity for the two points) 
   float col_time = float(pos_b1 - pos_a1)/(pos_a2 - pos_a1 - pos_b2 + pos_b1);
   return col_time;
 }
 
 boolean is_collision(float time) {
+  // determine if collision occured
   boolean collision = false;
   if (0 < time && time <= 1) {
-    Serial.print("Collision set with time:");
-    Serial.println(time);
     collision = true;
   }
   return collision;
 }
 
 float collision_position(int pos1, int pos2, float time) {
+  // determine where a collision might occur  
   int position;  // no collision occurs
   if (0 <= collision_time <= 1) {
     position = pos1 + (pos2-pos1) * time;
@@ -177,16 +199,6 @@ float collision_position(int pos1, int pos2, float time) {
   return position;
 }
 
-// int crossing_pixel() {
-//   int prev_dist = blue_origin - red_origin;
-//   int new_dist = new_blue - new_red; 
-//   boolean crossing = false;
-//   if sign_changed(prev_dist, new_dist) {
-//     crossing = true;
-//   }
-
-//   return crossing;
-// } 
 
 // Some functions of our own for creating animated effects -----------------
 

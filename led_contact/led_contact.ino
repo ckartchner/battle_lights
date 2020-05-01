@@ -78,13 +78,8 @@ void setup() {
   matrix.begin(0x70);
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
-  matrix.writeDigitNum(0, 0);
-  matrix.writeDigitNum(1, 0);
-  matrix.writeDigitNum(2, 0);
-  matrix.writeDigitNum(3, 0);
-  matrix.drawColon(false);
-  matrix.writeDisplay();
-
+  zero_seven_segment();
+  delay(5000);
   Serial.begin(9600);
 }
 
@@ -111,6 +106,7 @@ int new_pos(int curr_pos) {
   return curr_pos;
 }
 
+
 int normalize_pos(int curr_pos) {
   if (curr_pos >= LED_COUNT) {
     curr_pos = curr_pos - LED_COUNT;
@@ -120,13 +116,24 @@ int normalize_pos(int curr_pos) {
   return curr_pos;
 }
 
+
+void zero_seven_segment() {
+  matrix.writeDigitNum(0, 0);
+  matrix.writeDigitNum(1, 0);
+  matrix.writeDigitNum(3, 0);
+  matrix.writeDigitNum(4, 0);
+  matrix.writeDisplay();
+}
+
+
 void show_battle_pos(int right_team_new_pos, int left_team_new_pos){
   right_team_pos = normalize_pos(right_team_new_pos);
   left_team_pos = normalize_pos(left_team_new_pos);
   strip.setPixelColor(right_team_pos, purple);
-  strip.setPixelColor(left_team_pos, yellow);
+  strip.setPixelColor(left_team_pos, green);
   strip.show();
 }
+
 
 void pixel_battle() {
   strip.clear();
@@ -160,13 +167,11 @@ void pixel_battle() {
     if (full_count < 1000) {
         matrix.writeDigitNum(0, 0);
     }
-    // Initialize display to all zeros
-    if (left_count < 1){
-      matrix.writeDigitNum(0, 0);
+    if (full_count < 100) {
       matrix.writeDigitNum(1, 0);
-      matrix.writeDigitNum(2, 0);
+    }
+    if (full_count < 10) {
       matrix.writeDigitNum(3, 0);
-      matrix.drawColon(false);
     }
     matrix.writeDisplay();
 

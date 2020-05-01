@@ -102,7 +102,7 @@ void loop() {
 
 
 int new_pos(int curr_pos) {
-  curr_pos = curr_pos + random(-rand_range, rand_range);
+  curr_pos = curr_pos + random(-rand_range, rand_range + 1);
   return curr_pos;
 }
 

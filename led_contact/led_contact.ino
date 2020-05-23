@@ -47,8 +47,8 @@ uint8_t previous_winner = 0x00;
 
 int middle = strip.numPixels()/2;
 int quarter = middle / 2;
-int right_team_init_pos = strip.numPixels() - quarter;
-int left_team_init_pos = quarter;
+int left_team_init_pos = strip.numPixels() - quarter;
+int right_team_init_pos = quarter;
 int right_team_pos = right_team_init_pos;
 int left_team_pos = left_team_init_pos;
 uint32_t red = strip.Color(127, 0, 0);
@@ -56,8 +56,8 @@ uint32_t blue = strip.Color(0, 0, 127);
 uint32_t yellow = strip.Color(127, 127, 0);
 uint32_t green = strip.Color(0, 127, 0);
 uint32_t purple = strip.Color(127, 0, 127);
-uint32_t left_color = red;
-uint32_t right_color = blue;
+uint32_t left_color = blue;
+uint32_t right_color = red;
 
 
 
@@ -81,7 +81,7 @@ void setup() {
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
   zero_seven_segment();
-  delay(5000);
+  delay(2000);
   Serial.begin(9600);
 }
 
@@ -162,10 +162,10 @@ void pixel_battle() {
   strip.clear();
   // Setup left vs. right colors
   for(int i=0; i<middle; i++) {
-    strip.setPixelColor(i, left_color);
+    strip.setPixelColor(i, right_color);
   }
   for(int i=middle; i<=strip.numPixels(); i++) {
-    strip.setPixelColor(i, right_color);
+    strip.setPixelColor(i, left_color);
   }
   int right_team_start_pos = right_team_pos;
   int left_team_start_pos = left_team_pos;
@@ -177,9 +177,9 @@ void pixel_battle() {
     float cp = collision_position(right_team_start_pos, right_team_new_pos, col_time);
     // Check which team scored the point and increment 
     if (cp < middle) {
-      right_count++;
-    } else if (cp > middle) {
       left_count++;
+    } else if (cp > middle) {
+      right_count++;
     } else {
       // Tie
     }
@@ -206,9 +206,9 @@ void pixel_battle() {
 
       // End of round LED sequence
       if (cp < middle) {
-        right_wins();
+        left_wins();
       } else if (cp > middle) {
-        left_wins();  
+        right_wins();
       } else {
         // Tie
       }
@@ -252,18 +252,18 @@ float collision_position(int pos1, int pos2, float time) {
 
 
 // Some functions for creating animated effects -----------------
-void right_wins() {
+void left_wins() {
   for (int i=middle; i>=0; i--) {
-    strip.setPixelColor(i, right_color);
+    strip.setPixelColor(i, left_color);
     strip.show();
     delay(200);
   }
 }
 
 
-void left_wins() {
+void right_wins() {
   for (int i=middle; i<strip.numPixels(); i++) {
-    strip.setPixelColor(i, left_color);
+    strip.setPixelColor(i, right_color);
     strip.show();
     delay(200);
   }
